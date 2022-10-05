@@ -26,6 +26,14 @@ public class PlayerMovement : NetworkBehaviour
         currentDirVelocity = Vector2.zero;
     }
 
+    private void Start()
+    {
+        // Let Game Manager know that you have spawned
+        GameManager.instance.players[GameManager.instance.numOfPlayers] = transform; // Let Game Manager store my Transform for the monsters
+        GameManager.instance.playerCameras[GameManager.instance.numOfPlayers] = transform.GetChild(0).GetComponent<Camera>(); // Game Manager stores cameras for monsters with visibility abilities
+        GameManager.instance.numOfPlayers++;
+    }
+
 
     private void Update()
     {

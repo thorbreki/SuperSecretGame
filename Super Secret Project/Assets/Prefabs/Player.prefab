@@ -102,7 +102,7 @@ GameObject:
   - component: {fileID: 675482253063555347}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -293,6 +293,7 @@ MonoBehaviour:
   _networkObjectCache: {fileID: 2465949379547714774}
   walkSpeed: 6
   moveSmoothTime: 0.15
+  gravity: -13
 --- !u!114 &675482253063555347
 MonoBehaviour:
   m_ObjectHideFlags: 0
