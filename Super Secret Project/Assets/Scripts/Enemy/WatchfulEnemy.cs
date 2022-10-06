@@ -1,27 +1,30 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class WatchfulEnemy : MonoBehaviour
 {
     [SerializeField] private Transform playersParent;
     [SerializeField] private float maxSightDistance = 100f; // This is the maximum distance I can see to
-    [SerializeField] private float movementSpeed = 2.0f;
-    [SerializeField] private float rotationSpeed = 2.0f;
+
+    [SerializeField] private NavMeshAgent agent;
+    [SerializeField] private LayerMask whatIsGround, whatIsPlayer;
+
+    // patroling
+    private Vector3 walkPoint;
+    private Vector3 targetVector; // So I can efficiently be sure that the enemy never goes to a wrong y level 
+    private bool walkPointSet;
+    private float walkPointRange;
+
     private int targetTransformIndex;
     private bool lookedAtByPlayer; // Becomes false when the player stops looking at the enemy, used in the target phase
-
-    // USED FOR ROTATING ME TOWARDS MY TARGET :)
-    private Quaternion lookRotation;
-    private Vector3 direction;
 
     // FOR THE VISIBILITY CHECKING METHOD
     private Renderer m_renderer;
     private Vector3 screenPos;
     private bool onScreen;
     [SerializeField] private float padding;
-
-    private Vector3 movementVector;
 
     private enum Phase
     {
@@ -33,7 +36,7 @@ public class WatchfulEnemy : MonoBehaviour
 
     void Start()
     {
-
+        targetVector = Vector3.zero;
         // FOR THE VISIBILITY CHECKING METHOD
         m_renderer = GetComponent<Renderer>();
     }
@@ -51,27 +54,51 @@ public class WatchfulEnemy : MonoBehaviour
 
     }
 
+    private void SearchWalkPoint()
+    {
+        float randomZ = Random.Range(-walkPointRange, walkPointRange);
+        float randomX = Random.Range(-walkPointRange, walkPointRange);
 
+        walkPoint = new Vector3(transform.position.x + randomX, transform.position.y, transform.position.x + randomZ);
+
+        if (Physics.Raycast(walkPoint, -transform.up, 2f, whatIsGround))
+            walkPointSet = true;
+    }
     
     /// <summary>
     /// The code that runs when I am looking if I can spot any players
     /// </summary>
     private void SearchPhase()
     {
-        RaycastHit hit;
-        for (int i = 0; i < GameManager.instance.numOfPlayers; i++)
+        // The part of the code that allows me to walk around the map in search of flesh
+        if (!walkPointSet) SearchWalkPoint();
+
+        if (walkPointSet)
+            agent.SetDestination(walkPoint);
+
+        Vector3 distanceToWalkPoint = transform.position - walkPoint;
+
+            // Walkpoint reached
+        if (distanceToWalkPoint.sqrMagnitude < 2f)
         {
-            if (Physics.Raycast(transform.position, GameManager.instance.players[i].position - transform.position, out hit, maxDistance: maxSightDistance))
-            {
-                if (hit.transform.CompareTag("Player"))
-                {
-                    currPhase = Phase.targetPhase; // Time to look menacingly at the player and try to eat him :)
-                    targetTransformIndex = i; // Set the target to be the player I can see
-                    print("I'M GONNA EAT YOU! :)");
-                    break;
-                }
-            }
+            walkPointSet = false;
         }
+
+        // Where I am checking if I can actually see a player
+        //RaycastHit hit;
+        //for (int i = 0; i < GameManager.instance.numOfPlayers; i++)
+        //{
+        //    if (Physics.Raycast(transform.position, GameManager.instance.players[i].position - transform.position, out hit, maxDistance: maxSightDistance))
+        //    {
+        //        if (hit.transform.CompareTag("Player"))
+        //        {
+        //            currPhase = Phase.targetPhase; // Time to look menacingly at the player and try to eat him :)
+        //            targetTransformIndex = i; // Set the target to be the player I can see
+        //            print("I'M GONNA EAT YOU! :)");
+        //            break;
+        //        }
+        //    }
+        //}
     }
 
     /// <summary>
@@ -79,20 +106,6 @@ public class WatchfulEnemy : MonoBehaviour
     /// </summary>
     private void TargetPhase()
     {
-        // First of all rotate, to see the player
-
-        //find the vector pointing from our position to the target
-        direction = GameManager.instance.players[targetTransformIndex].position - transform.position;
-        direction.y = 0;
-        direction = direction.normalized;
-
-        //create the rotation we need to be in to look at the target
-        lookRotation = Quaternion.LookRotation(direction);
-
-        //rotate us over time according to speed until we are in the required rotation
-        transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * rotationSpeed);
-
-
         // Now to move towards the target when nobody is looking!
         lookedAtByPlayer = false;
 
@@ -131,9 +144,14 @@ public class WatchfulEnemy : MonoBehaviour
 
         if (!lookedAtByPlayer)
         {
-            movementVector = GameManager.instance.players[targetTransformIndex].position - transform.position;
-            movementVector.y = 0;
-            transform.Translate(movementVector.normalized * movementSpeed * Time.deltaTime, Space.World);
+            // This is where I should be moving
+            targetVector = GameManager.instance.players[targetTransformIndex].position;
+            targetVector.y = transform.position.y;
+            agent.SetDestination(targetVector);
+        } else
+        {
+            // This is when the player is looking at me so I should be still
+            agent.SetDestination(transform.position);
         }
 
 
