@@ -15,7 +15,7 @@ public class WatchfulEnemy : MonoBehaviour
     private Vector3 walkPoint;
     private Vector3 targetVector; // So I can efficiently be sure that the enemy never goes to a wrong y level 
     private bool walkPointSet;
-    private float walkPointRange;
+    [SerializeField] private float walkPointRange;
 
     private int targetTransformIndex;
     private bool lookedAtByPlayer; // Becomes false when the player stops looking at the enemy, used in the target phase
@@ -74,7 +74,10 @@ public class WatchfulEnemy : MonoBehaviour
         if (!walkPointSet) SearchWalkPoint();
 
         if (walkPointSet)
+        {
             agent.SetDestination(walkPoint);
+            print("Walking towards " + walkPoint.x.ToString() + " " + walkPoint.z.ToString());
+        }
 
         Vector3 distanceToWalkPoint = transform.position - walkPoint;
 
@@ -85,20 +88,20 @@ public class WatchfulEnemy : MonoBehaviour
         }
 
         // Where I am checking if I can actually see a player
-        //RaycastHit hit;
-        //for (int i = 0; i < GameManager.instance.numOfPlayers; i++)
-        //{
-        //    if (Physics.Raycast(transform.position, GameManager.instance.players[i].position - transform.position, out hit, maxDistance: maxSightDistance))
-        //    {
-        //        if (hit.transform.CompareTag("Player"))
-        //        {
-        //            currPhase = Phase.targetPhase; // Time to look menacingly at the player and try to eat him :)
-        //            targetTransformIndex = i; // Set the target to be the player I can see
-        //            print("I'M GONNA EAT YOU! :)");
-        //            break;
-        //        }
-        //    }
-        //}
+        RaycastHit hit;
+        for (int i = 0; i < GameManager.instance.numOfPlayers; i++)
+        {
+            if (Physics.Raycast(transform.position, GameManager.instance.players[i].position - transform.position, out hit, maxDistance: maxSightDistance))
+            {
+                if (hit.transform.CompareTag("Player"))
+                {
+                    currPhase = Phase.targetPhase; // Time to look menacingly at the player and try to eat him :)
+                    targetTransformIndex = i; // Set the target to be the player I can see
+                    print("I'M GONNA EAT YOU! :)");
+                    break;
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -157,7 +160,7 @@ public class WatchfulEnemy : MonoBehaviour
 
     }
 
-    // TODO: FIX THIS METHOD TO HAVE A CERTAIN PADDING, SO THE PLAYER NEVER SEES THE MONSTER MOVING
+
     private bool CheckVisibility(Camera m_camera)
     {
         //Check Visibility
